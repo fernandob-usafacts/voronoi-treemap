@@ -1,0 +1,103 @@
+<style>
+  path {
+    stroke: #979797;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+</style>
+
+<div id="chart"></div>
+Year: <input id="year" type="range" min="0" max="2" value="0">
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+
+  Promise.all([d3.json("data/treemap.json")]).then(function(treemap){
+
+    const cells = treemap[0];
+
+    // console.log(cells)
+
+    const width = 600;
+    const height = 600;
+    const padding = 10;
+
+    let svg = d3.select("#chart").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    let xMin = d3.min(cells[0], d => d3.min(d.vertices.map(v => v.x)));
+    let xMax = d3.max(cells[0], d => d3.max(d.vertices.map(v => v.x)));
+    let yMin = d3.min(cells[0], d => d3.min(d.vertices.map(v => v.y)));
+    let yMax = d3.max(cells[0], d => d3.max(d.vertices.map(v => v.y)));
+    let maxLevel = d3.max(cells[0], d => d.level);
+
+    let xScale = d3.scaleLinear()
+      .range([padding, width - padding])
+      .domain([xMin, xMax]);
+
+    let yScale = d3.scaleLinear()
+      .range([padding, height - padding])
+      .domain([yMin, yMax]);
+
+    var color = d3.scaleThreshold()
+      .domain([-10, -5, -2, 1, 3, 6, 10, 15, 40])
+      .range(["#577185", "#819fbb", "#aec1d9", "#e8e9f4", "#f0efe3", "#ffe5be", "#f8d79c", "#efbe58", "#b57c72", "#8a5a53"]);
+      // .range(["#3C2A9A", "#7756B2", "#A786CB", "#D3B9E6", "#F1F1F1", "#F2E289", "#E5BD3F", "#D99522", "#CC6A19", "#CC6A19"]);
+
+    let line = d3.line()
+      .x(d => xScale(d.x))
+      .y(d => yScale(d.y))
+      .curve(d3.curveLinearClosed);
+
+    const t = 0;
+
+    d3.select("#year").on("input", update);
+
+    update();
+
+    function update() {
+
+      let idx = d3.select("#year").property("value");
+
+      let path =  svg.selectAll("path")
+        .data(cells[idx]);
+
+      path.enter().append("path")
+        .transition().duration(t)
+        .attr("id", d => d.name)
+        .attr("d", d => line(d.vertices))
+        .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
+        .attr("fill", d =>  d.change === 'NA' ? '#f1f1f1' : color(d.change));
+
+      path.transition().duration(t)
+        .attr("id", d => d.name)
+        .attr("d", d => line(d.vertices))
+        .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
+        .attr("fill", d =>  d.change === 'NA' ? '#f1f1f1' : color(d.change));
+
+      path.exit().remove();
+
+      let text = svg.selectAll("text")
+        .data(cells[idx]);
+
+      text.enter().append("text")
+        .transition().duration(t)
+        .attr("x", d => xScale(d.x))
+        .attr("y", d => yScale(d.y))
+        .style("text-anchor", "middle")
+        .text(d => d.size > 2 && d.leaf === true ? d.name : '');
+
+      text.transition().duration(t)
+        .attr("x", d => xScale(d.x))
+        .attr("y", d => yScale(d.y))
+        .style("text-anchor", "middle")
+        .text(d => d.size > 2 && d.leaf === true ? d.name : '');
+
+      text.exit().remove();
+
+    }
+
+  })
+
+</script>
