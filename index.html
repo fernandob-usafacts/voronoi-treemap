@@ -12,11 +12,11 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 
-  Promise.all([d3.json("data/treemap.json")]).then(function(treemap){
+  Promise.all([d3.json("data/data.json")]).then(function(treemap){
 
     const cells = treemap[0];
 
-    // console.log(cells)
+    console.log(cells)
 
     const width = 600;
     const height = 600;
@@ -26,11 +26,11 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       .attr("width", width)
       .attr("height", height);
 
-    let xMin = d3.min(cells[0], d => d3.min(d.vertices.map(v => v.x)));
-    let xMax = d3.max(cells[0], d => d3.max(d.vertices.map(v => v.x)));
-    let yMin = d3.min(cells[0], d => d3.min(d.vertices.map(v => v.y)));
-    let yMax = d3.max(cells[0], d => d3.max(d.vertices.map(v => v.y)));
-    let maxLevel = d3.max(cells[0], d => d.level);
+    let xMin = d3.min(cells, d => d3.min(d.vertices[0].map(v => v[0])));
+    let xMax = d3.max(cells, d => d3.max(d.vertices[0].map(v => v[0])));
+    let yMin = d3.min(cells, d => d3.min(d.vertices[0].map(v => v[1])));
+    let yMax = d3.max(cells, d => d3.max(d.vertices[0].map(v => v[1])));
+    let maxLevel = d3.max(cells, d => d.level);
 
     let xScale = d3.scaleLinear()
       .range([padding, width - padding])
@@ -46,13 +46,15 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       // .range(["#3C2A9A", "#7756B2", "#A786CB", "#D3B9E6", "#F1F1F1", "#F2E289", "#E5BD3F", "#D99522", "#CC6A19", "#CC6A19"]);
 
     let line = d3.line()
-      .x(d => xScale(d.x))
-      .y(d => yScale(d.y))
+      .x(d => xScale(d[0]))
+      .y(d => yScale(d[1]))
       .curve(d3.curveLinearClosed);
 
     const t = 0;
 
-    d3.select("#year").on("input", update);
+    d3.select("#year")
+      .attr("max", cells[0].size.length)
+      .on("input", update);
 
     update();
 
@@ -61,38 +63,38 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       let idx = d3.select("#year").property("value");
 
       let path =  svg.selectAll("path")
-        .data(cells[idx]);
+        .data(cells);
 
       path.enter().append("path")
         .transition().duration(t)
         .attr("id", d => d.name)
-        .attr("d", d => line(d.vertices))
+        .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
-        .attr("fill", d =>  d.change === 'NA' ? '#f1f1f1' : color(d.change));
+        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
 
       path.transition().duration(t)
         .attr("id", d => d.name)
-        .attr("d", d => line(d.vertices))
+        .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
-        .attr("fill", d =>  d.change === 'NA' ? '#f1f1f1' : color(d.change));
+        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
 
       path.exit().remove();
 
       let text = svg.selectAll("text")
-        .data(cells[idx]);
+        .data(cells);
 
       text.enter().append("text")
         .transition().duration(t)
-        .attr("x", d => xScale(d.x))
-        .attr("y", d => yScale(d.y))
+        .attr("x", d => xScale(d.center[idx][0]))
+        .attr("y", d => yScale(d.center[idx][1]))
         .style("text-anchor", "middle")
-        .text(d => d.size > 2 && d.leaf === true ? d.name : '');
+        .text(d => d.size[idx] > 2 && d.leaf === true ? d.name : '');
 
       text.transition().duration(t)
-        .attr("x", d => xScale(d.x))
-        .attr("y", d => yScale(d.y))
+        .attr("x", d => xScale(d.center[idx][0]))
+        .attr("y", d => yScale(d.center[idx][1]))
         .style("text-anchor", "middle")
-        .text(d => d.size > 2 && d.leaf === true ? d.name : '');
+        .text(d => d.size[idx] > 2 && d.leaf === true ? d.name : '');
 
       text.exit().remove();
 
