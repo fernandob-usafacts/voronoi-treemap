@@ -15,8 +15,17 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
   Promise.all([d3.json("data/data.json")]).then(function(treemap){
 
     const cells = treemap[0];
+    const dates = [];
+    const zeroPad = (num) => String(num).padStart(2, '0');
+    for (y = 2012; y <= 2022; y++) {
+      for (m = 1; m <= 12; m++) {
+        if ((y === 2012) && (m < 3)) continue;
+        if ((y === 2022) && (m > 5)) continue;
+        dates.push(zeroPad(m) + y);
+      }
+    }
 
-    console.log(cells)
+    // console.log(cells)
 
     const width = 600;
     const height = 600;
