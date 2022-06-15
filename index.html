@@ -26,6 +26,15 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       .attr("width", width)
       .attr("height", height);
 
+    const tooltip = d3.select('body').append('div')
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("left", '0px')
+      .style('top', '0px')
+      .style("background-color", "rgba(255, 255, 255, 0.5)")
+      .style('padding', '15px')
+      .style("display", "none");
+
     let xMin = d3.min(cells, d => d3.min(d.vertices[0].map(v => v[0])));
     let xMax = d3.max(cells, d => d3.max(d.vertices[0].map(v => v[0])));
     let yMin = d3.min(cells, d => d3.min(d.vertices[0].map(v => v[1])));
@@ -62,21 +71,35 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
       let idx = d3.select("#year").property("value");
 
+      function showTooltip(event, d) {
+        tooltip.style("left", event.offsetX + 'px')
+          .style("top", (event.offsetY + 25) + 'px')
+          .style("display", "block")
+          .html(`<p><h3>${d.name}</h3></p><p>Size: ${d.size[idx]}</p><p>Monthly change: ${d.mchg[idx]}</p><p>Yearly change: ${d.ychg[idx]}</p>`);
+      }
+
+      function hideTooltip(event, d) {
+        tooltip.style("display", "none");
+      }
+
       let path =  svg.selectAll("path")
         .data(cells);
 
       path.enter().append("path")
-        .transition().duration(t)
         .attr("id", d => d.name)
         .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
-        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
+        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]))
+        .on("mousemove", showTooltip)
+        .on("mouseout", hideTooltip);
 
-      path.transition().duration(t)
+      path
         .attr("id", d => d.name)
         .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
-        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
+        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]))
+        .on("mousemove", showTooltip)
+        .on("mouseout", hideTooltip);
 
       path.exit().remove();
 
