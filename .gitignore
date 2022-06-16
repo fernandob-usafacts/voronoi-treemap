@@ -1,0 +1,7 @@
+temp*/
+input/
+output/
+*.cin
+diagram.txt
+.DS_Store
+voronoiDiagram
