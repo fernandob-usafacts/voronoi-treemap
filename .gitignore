@@ -5,3 +5,4 @@ output/
 diagram.txt
 .DS_Store
 voronoiDiagram
+.ipynb_checkpoints
