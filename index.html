@@ -4,21 +4,40 @@
     stroke-linejoin: round;
     stroke-linecap: round;
   }
+
+  #spending, #spending-pct {
+    display: inline-block;
+  }
 </style>
 
-<div id="chart"></div>
 Year: <input id="year" type="range" min="0" max="2" value="0">
+<div id="chart"></div>
+
 <div id="spending"></div>
 <div id="spending-pct"></div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 
-  addLinePlot = function(divId, data, xField, yField) {
+  var nameNoSpaces = function(name) {
+    return name.toLowerCase()
+      .replaceAll(" ", "")
+      .replaceAll("'", "")
+      .replaceAll(",", "")
+      .replaceAll("(", "")
+      .replaceAll(")", "");
+  }
+
+  addLinePlot = function(divId, data, xField, yField, yAdd=1) {
 
     const width = 600;
     const height = 600;
     const padding = 50;
+
+    console.og
+
+    const ages = data[0].values.map(d => d[xField]);
+    console.log(ages)
 
     let svg = d3.select("#" + divId).append("svg")
       .attr("width", width)
@@ -41,13 +60,13 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       .range([padding, width - padding])
       .domain([xMin, xMax]);
 
-    let yScale = d3.scaleLinear()
+    let yScale = d3.scaleLog()
       .range([height - padding, padding])
-      .domain([yMin, yMax]);
+      .domain([yMin + yAdd, yMax + yAdd]);
 
     let line = d3.line()
       .x(d => xScale(d[xField]))
-      .y(d => yScale(d[yField]));
+      .y(d => yScale(d[yField] + yAdd));
 
     xAxis.call(d3.axisBottom(xScale));
     yAxis.call(d3.axisLeft(yScale));
@@ -56,18 +75,46 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       .data(data);
 
     path.enter().append("path")
-      .attr("id", d => d.name)
+      .attr("class", d => nameNoSpaces(d.name) + " line")
       .attr("d", d => line(d.values))
       .attr("stroke-width", 1.0)
       .attr("fill", 'none');
 
     path
-      .attr("id", d => d.name)
+      .attr("class", d => nameNoSpaces(d.name) + " line")
       .attr("d", d => line(d.values))
       .attr("stroke-width", 1.0)
       .attr("fill", 'none');
 
     path.exit().remove();
+
+    svg.on("mousemove", moved)
+      .on("mouseleave", left);
+
+    function moved(event, d) {
+      const thisX = xScale.invert(d3.pointer(event, this)[0]);
+      const thisY = yScale.invert(d3.pointer(event, this)[1]);
+
+      const i1 = d3.bisectLeft(ages, thisX, 1);
+      const i0 = i1 - 1;
+      const i = thisX - ages[i0] > ages[i1] - thisX ? i1 : i0;
+
+      const s = d3.least(data, d => Math.abs(d.values[i][yField] - thisY + yAdd));
+
+      d3.selectAll(".line")
+        .style("stroke-width", 1.0)
+        .style("stroke", "#979797");
+      d3.selectAll(".line." + nameNoSpaces(s.name))
+        .style("stroke", "steelblue")
+        .style("stroke-width", 2.0)
+        .raise();
+    }
+
+    function left() {
+      d3.selectAll(".line")
+        .style("stroke-width", 1.0)
+        .style("stroke", "#979797");
+    }
   }
 
   Promise.all([d3.json("data/data.json"), d3.json("data/spending.json")]).then(function(treemap){
@@ -192,9 +239,17 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
     }
 
     let y1 = 'spending';
-    addLinePlot("spending", spending.filter(d => d.values.reduce((a,b) => a && b[y1] >= 0, true)), "age", y1);
+    addLinePlot("spending",
+                spending.filter(d => d.values.reduce((a,b) => a && b[y1] >= 0, true)),
+                "age",
+                y1,
+                yAdd=1);
     let y2 = 'spending_pct';
-    addLinePlot("spending-pct", spending.filter(d => d.values.reduce((a,b) => a && b[y2] >= 0, true)), "age", y2);
+    addLinePlot("spending-pct",
+                spending.filter(d => d.values.reduce((a,b) => a && b[y2] >= 0, true)),
+                "age",
+                y2,
+                yAdd=0.01);
 
   })
 
