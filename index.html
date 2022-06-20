@@ -13,6 +13,7 @@
 Year: <input id="year" type="range" min="0" max="2" value="0">
 <div id="chart"></div>
 
+<div id="label"></div>
 <div id="spending"></div>
 <div id="spending-pct"></div>
 
@@ -108,12 +109,14 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
         .style("stroke", "steelblue")
         .style("stroke-width", 2.0)
         .raise();
+      d3.select("#label").html(s.name);
     }
 
     function left() {
       d3.selectAll(".line")
         .style("stroke-width", 1.0)
         .style("stroke", "#979797");
+      d3.select("#label").html("");
     }
   }
 
