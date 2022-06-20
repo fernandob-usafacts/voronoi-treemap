@@ -8,13 +8,72 @@
 
 <div id="chart"></div>
 Year: <input id="year" type="range" min="0" max="2" value="0">
+<div id="spending"></div>
+<div id="spending-pct"></div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 
-  Promise.all([d3.json("data/data.json")]).then(function(treemap){
+  addLinePlot = function(divId, data, xField, yField) {
+
+    const width = 600;
+    const height = 600;
+    const padding = 50;
+
+    let svg = d3.select("#" + divId).append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    let xAxis = svg.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + (height - padding) + ")");
+
+    let yAxis = svg.append("g")
+      .attr("class", "axis axis--y")
+      .attr("transform", "translate(" + padding + ",0)");
+
+    let xMin = d3.min(data, d => d3.min(d.values.map(v => v[xField])));
+    let xMax = d3.max(data, d => d3.max(d.values.map(v => v[xField])));
+    let yMin = d3.min(data, d => d3.min(d.values.map(v => v[yField])));
+    let yMax = d3.max(data, d => d3.max(d.values.map(v => v[yField])));
+
+    let xScale = d3.scaleLinear()
+      .range([padding, width - padding])
+      .domain([xMin, xMax]);
+
+    let yScale = d3.scaleLinear()
+      .range([height - padding, padding])
+      .domain([yMin, yMax]);
+
+    let line = d3.line()
+      .x(d => xScale(d[xField]))
+      .y(d => yScale(d[yField]));
+
+    xAxis.call(d3.axisBottom(xScale));
+    yAxis.call(d3.axisLeft(yScale));
+
+    let path =  svg.selectAll("path")
+      .data(data);
+
+    path.enter().append("path")
+      .attr("id", d => d.name)
+      .attr("d", d => line(d.values))
+      .attr("stroke-width", 1.0)
+      .attr("fill", 'none');
+
+    path
+      .attr("id", d => d.name)
+      .attr("d", d => line(d.values))
+      .attr("stroke-width", 1.0)
+      .attr("fill", 'none');
+
+    path.exit().remove();
+  }
+
+  Promise.all([d3.json("data/data.json"), d3.json("data/spending.json")]).then(function(treemap){
 
     const cells = treemap[0];
+    const spending = treemap[1];
     const dates = [];
     const zeroPad = (num) => String(num).padStart(2, '0');
     for (y = 2012; y <= 2022; y++) {
@@ -131,6 +190,11 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       text.exit().remove();
 
     }
+
+    let y1 = 'spending';
+    addLinePlot("spending", spending.filter(d => d.values.reduce((a,b) => a && b[y1] >= 0, true)), "age", y1);
+    let y2 = 'spending_pct';
+    addLinePlot("spending-pct", spending.filter(d => d.values.reduce((a,b) => a && b[y2] >= 0, true)), "age", y2);
 
   })
 
