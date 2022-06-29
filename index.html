@@ -17,6 +17,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 <div id="spending"></div>
 <div id="spending-pct"></div>
 
+<script src="https://unpkg.com/flubber@0.3.0"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 
@@ -35,10 +36,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
     const height = 600;
     const padding = 50;
 
-    console.og
-
     const ages = data[0].values.map(d => d[xField]);
-    console.log(ages)
 
     let svg = d3.select("#" + divId).append("svg")
       .attr("width", width)
@@ -134,11 +132,10 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       }
     }
 
-    // console.log(cells)
-
     const width = 600;
     const height = 600;
     const padding = 10;
+    let idx = 0;
 
     let svg = d3.select("#chart").append("svg")
       .attr("width", width)
@@ -177,7 +174,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       .y(d => yScale(d[1]))
       .curve(d3.curveLinearClosed);
 
-    const t = 0;
+    const t = 100;
 
     d3.select("#year")
       .attr("max", cells[0].size.length - 1)
@@ -187,10 +184,11 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
     function update() {
 
-      let idx = d3.select("#year").property("value");
+      let prev_idx = idx;
+      idx = d3.select("#year").property("value");
 
       function showTooltip(event, d) {
-        tooltip.style("left", event.offsetX + 'px')
+        tooltip.style("left", (event.offsetX + 25) + 'px')
           .style("top", (event.offsetY + 25) + 'px')
           .style("display", "block")
           .html(`<p><h3>${d.name}</h3></p><p>Size: ${d.size[idx]}</p><p>Monthly change: ${d.mchg[idx]}</p><p>Yearly change: ${d.ychg[idx]}</p>`);
@@ -204,19 +202,35 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
         .data(cells);
 
       path.enter().append("path")
+        .transition().duration(500)
         .attr("id", d => d.name)
-        .attr("d", d => line(d.vertices[idx]))
+        // .attr("d", d => line(d.vertices[idx]))
+        .attrTween("d", function(d){
+          if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
+            return null;
+          }
+          let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
+          return interpolator
+        })
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
         .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]))
-        .on("mousemove", showTooltip)
-        .on("mouseout", hideTooltip);
+        // .on("mouseover", showTooltip)
+        // .on("mouseout", hideTooltip);
 
-      path
-        .attr("id", d => d.name)
-        .attr("d", d => line(d.vertices[idx]))
+      path.transition().duration(500)
+        // .attr("id", d => d.name)
+        .attrTween("d", function(d, i){
+          if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
+            return null;
+          }
+          let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
+          return interpolator
+        })
+        // .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
-        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]))
-        .on("mousemove", showTooltip)
+        .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
+
+      path.on("mouseover", showTooltip)
         .on("mouseout", hideTooltip);
 
       path.exit().remove();
