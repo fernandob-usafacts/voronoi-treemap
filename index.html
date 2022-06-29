@@ -118,7 +118,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
     }
   }
 
-  Promise.all([d3.json("data/data.json"), d3.json("data/spending.json")]).then(function(treemap){
+  Promise.all([d3.json("data/data_age.json"), d3.json("data/spending.json")]).then(function(treemap){
 
     const cells = treemap[0];
     const spending = treemap[1];
