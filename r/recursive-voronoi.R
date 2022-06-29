@@ -102,7 +102,7 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
 
   treemap <- NULL
   attempt <- 0
-  while ( is.null(treemap) && attempt <= 40) {
+  while (is.null(treemap) && attempt <= 200) {
     attempt <- attempt + 1
     print(paste("ATTEMPT ", attempt))
     print(paste(labels))
@@ -125,7 +125,15 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
     }
     target <- temp/sum(temp)
     tryCatch({
-      treemap <- allocate(labels, list(x=x, y=y), w, region, target, debug=FALSE, maxIteration=100)
+      treemap <- allocate(labels, list(x=x, y=y), w, region, target, debug=TRUE, maxIteration=100)
+      for (idx_treemap in 1:length(treemap$t)) {
+        # if ((treemap$t[[idx_treemap]] == 0 && treemap$a[[idx_treemap]] != 0) ||
+        if (treemap$t[[idx_treemap]] != 0 && treemap$a[[idx_treemap]] == 0) {
+              treemap <- NULL
+              break
+            }
+      }
+      
     },
     warning = function(warn) {
      print(paste("WARNING: ", warn))
@@ -146,10 +154,10 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
     print(" TREEMAP IS NULL ")
     stop()
   }
-  if (!file.exists(filepath)) {
-    df <- data.frame(x=treemap$s$x, y=treemap$s$y, w=treemap$w)
-    fwrite(df, file=filepath)
-  }
+  # if (!file.exists(filepath)) {
+  df <- data.frame(x=treemap$s$x, y=treemap$s$y, w=treemap$w)
+  fwrite(df, file=filepath)
+  # }
   treemap
 }
 
@@ -191,7 +199,7 @@ recursive_treemap <- function(categories, center, region, extent, idx_year, leve
   treemap
 }
 
-result <- fromJSON('input/test3b.json', simplifyVector=FALSE)
+result <- fromJSON('input/test3b-age.json', simplifyVector=FALSE)
 
 center <- list(x=500, y=500)
 disc <- discpoly(c(500,500), 3/2*500, npoly=64, class = "gpc.poly")
@@ -199,9 +207,9 @@ categories <- result[[1]]$children
 
 nMonths <- length(result[[1]]$children[[1]]$children[[1]]$children[[1]]$children[[1]]$children[[1]]$chg)
 
-for (idx_year in 60:nMonths) {
+for (idx_year in 19:21) {
   tryCatch({
-    filename <- paste("output/treemap", idx_year, ".json", sep="")
+    filename <- paste("output/age/treemap", idx_year, ".json", sep="")
     print(filename)
     if (file.exists(filename)) {
       next
@@ -210,7 +218,7 @@ for (idx_year in 60:nMonths) {
     categories_match <- recursive_match(categories, treemap, idx_year)
     json_data <- toJSON(categories_match, pretty=TRUE)
     write(json_data, filename)
-    folder_name = paste('temp', idx_year)
+    folder_name = paste('output/age/temp', idx_year)
     dir.create(folder_name)
     file.copy("temp", folder_name, recursive=TRUE)
   },
