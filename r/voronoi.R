@@ -26,12 +26,17 @@ recordSites <- function(sites, weights) {
 # Read the sites and weights from "sites.cin"
 # Generate an additively weighted Voronoi diagram
 # Write bounding cells to "diagram.txt"
-awv <- function(s, w, region, debug=FALSE, debugCell=FALSE) {
+awv <- function(s, w, region, target, debug=FALSE, debugCell=FALSE) {
     recordSites(s, w)
     result <- system("./voronoiDiagram > diagram.txt")
     if (result)
         stop(paste("Voronoi diagram failed with error", result))
     roughCells <- readCells(s)
+    for (i in 1:length(roughCells)) {
+        if (target[i] == 0) {
+            roughCells[[i]]$border <- NULL
+        }
+    }
     tolerance <- .0015
     # tolerance <- max(diff(range(s$x)), diff(range(s$y)))*.000001
     tidyCells <- tidyCells(roughCells, tolerance, debug, debugCell)

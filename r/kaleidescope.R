@@ -86,7 +86,7 @@ OLDadjustWeights <- function(w, a, target) {
     # The choice of 'eps' is important
     # Either too large (e.g., 10) or too small (e.g., .001)
     # can result in failure to converge
-    eps <- scale/10000
+    eps <- 0.05
     # Watch out for zero-area cells (set to target value)
     # a <- ifelse(a == 0, target/sum(target)*sum(a), a)
     # Watch out for zero-area cells (set to small value)
@@ -106,7 +106,8 @@ adjustWeights <- function(w, a, target) {
     # Watch out for zero-area cells (set to small value)
     a <- ifelse(a == 0, .01*sum(a), a)
     normA <- a/sum(a)
-    w + mean(abs(w))*((target - normA)/target)
+    nw <- ifelse(target == 0, 0, w + mean(abs(w))*((target - normA)/target))
+    nw
 }
 
 # Use centroid finding code in 'soiltexture' for now
@@ -191,12 +192,12 @@ shiftWeights <- function(s, w) {
 
 # The algorithm can fail to converge sometimes so
 # just give up after 'maxIteration's
-allocate <- function(names, s, w, outer, target, maxIteration=200,
+allocate <- function(names, s, w, outer, target, maxIteration=100,
                      debug=FALSE, dplot=FALSE, debugCell=FALSE) {
     count <- 1
     debugPlot <<- debugPlotGen()
     repeat {
-        k <- awv(s, w, outer, debug, debugCell)
+        k <- awv(s, w, outer, target, debug, debugCell)
         areas <- lapply(k, area.poly)
         if (debug) {
             drawRegions(list(names=names, k=k,

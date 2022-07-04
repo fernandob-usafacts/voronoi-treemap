@@ -97,12 +97,12 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
   temp <- unlist(map(categories, function(x) get_size(x, idx_year)))
 
   nCells <- length(labels)
-  filename <- Reduce(function(a,b) paste(a,b, sep='-'), labels)
-  filepath <- paste("temp/", filename, ".cin")
+  filename <- Reduce(function(a, b) paste(a, b, sep = "-"), labels)
+  filepath <- paste("temp/", filename, ".cin", sep = "")
 
   treemap <- NULL
   attempt <- 0
-  while (is.null(treemap) && attempt <= 200) {
+  while (is.null(treemap) && attempt <= 600) {
     attempt <- attempt + 1
     print(paste("ATTEMPT ", attempt))
     print(paste(labels))
@@ -111,39 +111,46 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
       x <- data$x
       y <- data$y
       w <- data$w
-      if (attempt == 10) {
-        unlink(filepath)
+      if (attempt > 10) {
+        nCenter <- length(data$x)
+        x <- data$x + (runif(nCenter) - 0.5) * 0.1 * data$x
+        y <- data$y + (runif(nCenter) - 0.5) * 0.1 * data$y
+        w <- data$w + (runif(nCenter) - 0.5) * 0.1 * data$w
       }
+      # if (attempt > 100) {
+      #   unlink(filepath)
+      # }
     } else {
       w <- runif(nCells, 1, 100)
 
-      # extent <- 10
-      dx <- extent * runif(nCells) - extent/2
-      dy <- extent * runif(nCells) - extent/2
+      dx <- extent * runif(nCells) - extent / 2
+      dy <- extent * runif(nCells) - extent / 2
       x <- center$x + dx
       y <- center$y + dy
     }
-    target <- temp/sum(temp)
+    target <- temp / sum(temp)
     tryCatch({
       treemap <- allocate(labels, list(x=x, y=y), w, region, target, debug=TRUE, maxIteration=100)
-      for (idx_treemap in 1:length(treemap$t)) {
-        # if ((treemap$t[[idx_treemap]] == 0 && treemap$a[[idx_treemap]] != 0) ||
-        if (treemap$t[[idx_treemap]] != 0 && treemap$a[[idx_treemap]] == 0) {
-              treemap <- NULL
-              break
-            }
-      }
-      
+      err <- cellError(unlist(treemap$a), target)
+      if (err > .05) {
+        treemap <- NULL
+      } #else {
+      #   for (idx_treemap in 1:length(treemap$t)) {
+      #     if ((treemap$t[[idx_treemap]] == 0 && treemap$a[[idx_treemap]] != 0) ||
+      #       (treemap$t[[idx_treemap]] != 0 && treemap$a[[idx_treemap]] == 0)) {
+      #       treemap <- NULL
+      #       break
+      #     }
+      #   }
+      # }
     },
     warning = function(warn) {
      print(paste("WARNING: ", warn))
      treemap <- NULL
-     unlink(filepath)
     },
     error = function(err) {
      print(paste("ERROR ", filename, ": ", err))
      treemap <- NULL
-     unlink(filepath)
     },
     finally = function(f) {
      continue
@@ -154,10 +161,15 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
     print(" TREEMAP IS NULL ")
     stop()
   }
-  # if (!file.exists(filepath)) {
-  df <- data.frame(x=treemap$s$x, y=treemap$s$y, w=treemap$w)
-  fwrite(df, file=filepath)
-  # }
+
+  folder_name <- paste("output/age/temp", idx_year, sep = "")
+  if (!file.exists(folder_name)) {
+    dir.create(folder_name)
+  }
+  df <- data.frame(x = treemap$s$x, y = treemap$s$y, w = treemap$w)
+  fwrite(df, file = paste("temp/", filename, ".cin", sep = ""))
+  fwrite(df, file = paste(folder_name, "/", filename, ".cin", sep = ""))
+
   treemap
 }
 
@@ -175,13 +187,25 @@ merge_treemaps <- function(treemap1, treemap2) {
   merged_treemap
 }
 
-recursive_treemap <- function(categories, center, region, extent, idx_year, level=1) {
+recursive_treemap <- function(categories, center, region, extent, idx_year, level=1, debug=FALSE) {
   if (length(categories) == 1){
     ss <- list(x=center[[1]], y=center[[2]])
     as <- pi * extent**2
     treemap <- list(names=c(categories[[1]]$name), k=c(region), s=c(ss), w=c(1), a=c(as), t=c(1))
   } else {
     treemap <- calculate_treemap(categories, center, region, extent, idx_year)
+    if (debug) {
+      labels <- map(categories, function(x) x$name)
+      filename <- Reduce(function(a, b) paste(a, b, sep = "-"), labels)
+      filepath <- paste("png/", filename, ".png", sep = "")
+      png(filepath)
+      par(mar=rep(1, 4))
+      plot(treemap$s$x, treemap$s$y, axes=FALSE, ann=FALSE, pch=16)
+      lapply(treemap$k, plot, add=TRUE)
+      text(treemap$s$x, treemap$s$y, treemap$names, pos=3)
+      box()
+      dev.off()
+    }
   }
 
   for (idx in 1:length(categories)) {
@@ -190,8 +214,8 @@ recursive_treemap <- function(categories, center, region, extent, idx_year, leve
       print(category$name)
       if(length(category$children) > 0) {
         center <- list(x=treemap$s$x[idx], y=treemap$s$y[idx])
-        radius <- sqrt(treemap$a[[idx]]/pi)
-        sub_treemap <- recursive_treemap(category$children, center, treemap$k[[idx]], radius, idx_year, level=level+1)
+        radius <- sqrt(treemap$a[[idx]]/pi) * 1.5
+        sub_treemap <- recursive_treemap(category$children, center, treemap$k[[idx]], radius, idx_year, level=level+1, debug=debug)
         treemap <- merge_treemaps(treemap, sub_treemap)
       }
     }
@@ -207,20 +231,20 @@ categories <- result[[1]]$children
 
 nMonths <- length(result[[1]]$children[[1]]$children[[1]]$children[[1]]$children[[1]]$children[[1]]$chg)
 
-for (idx_year in 19:21) {
+for (idx_year in 2:2) {
   tryCatch({
     filename <- paste("output/age/treemap", idx_year, ".json", sep="")
     print(filename)
     if (file.exists(filename)) {
       next
     }
-    treemap <- recursive_treemap(categories, center, disc, 500, idx_year, level=1)
+    treemap <- recursive_treemap(categories, center, disc, 500, idx_year, level=1, debug=FALSE)
     categories_match <- recursive_match(categories, treemap, idx_year)
     json_data <- toJSON(categories_match, pretty=TRUE)
     write(json_data, filename)
-    folder_name = paste('output/age/temp', idx_year)
-    dir.create(folder_name)
-    file.copy("temp", folder_name, recursive=TRUE)
+    # folder_name = paste('output/age/temp', idx_year)
+    # dir.create(folder_name)
+    # file.copy("temp", folder_name, recursive=TRUE)
   },
   warning = function(warn) {
    print(paste("WARNING: ", warn))
