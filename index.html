@@ -202,31 +202,31 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
         .data(cells);
 
       path.enter().append("path")
-        //.transition().duration(500)
+        .transition().duration(500)
         .attr("id", d => d.name)
         .attr("d", d => line(d.vertices[idx]))
-        // .attrTween("d", function(d){
-        //   if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
-        //     return null;
-        //   }
-        //   let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
-        //   return interpolator
-        // })
+        .attrTween("d", function(d){
+          if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
+            return null;
+          }
+          let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
+          return interpolator
+        })
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
         .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]))
         // .on("mouseover", showTooltip)
         // .on("mouseout", hideTooltip);
 
-      path//.transition().duration(500)
+      path.transition().duration(500)
         .attr("id", d => d.name)
-        // .attrTween("d", function(d, i){
-        //   if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
-        //     return null;
-        //   }
-        //   let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
-        //   return interpolator
-        // })
-        .attr("d", d => line(d.vertices[idx]))
+        .attrTween("d", function(d, i){
+          if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
+            return null;
+          }
+          let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
+          return interpolator
+        })
+        // .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
         .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
 
