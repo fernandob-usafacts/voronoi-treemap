@@ -106,20 +106,17 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
     attempt <- attempt + 1
     print(paste("ATTEMPT ", attempt))
     print(paste(labels))
-    if (file.exists(filepath)) {
+    if (file.exists(filepath) && attempt <= 20) {
       data <- fread(filepath)
       x <- data$x
       y <- data$y
       w <- data$w
-      if (attempt > 10) {
+      if (attempt > 5) {
         nCenter <- length(data$x)
-        x <- data$x + (runif(nCenter) - 0.5) * 0.1 * data$x
-        y <- data$y + (runif(nCenter) - 0.5) * 0.1 * data$y
-        w <- data$w + (runif(nCenter) - 0.5) * 0.1 * data$w
+        y <- data$y + (runif(nCenter) - 0.5) * 0.2 * data$y
+        w <- data$w + (runif(nCenter) - 0.5) * 0.2 * data$w
+        x <- data$x + (runif(nCenter) - 0.5) * 0.2 * data$x
       }
-      # if (attempt > 100) {
-      #   unlink(filepath)
-      # }
     } else {
       w <- runif(nCells, 1, 100)
 
@@ -130,9 +127,10 @@ calculate_treemap <- function(categories, center, region, extent, idx_year) {
     }
     target <- temp / sum(temp)
     tryCatch({
-      treemap <- allocate(labels, list(x=x, y=y), w, region, target, debug=TRUE, maxIteration=100)
+      treemap <- allocate(labels, list(x=x, y=y), w, region, target, debug=FALSE, maxIteration=100)
       err <- cellError(unlist(treemap$a), target)
-      if (err > .05) {
+      print(err)
+      if (err > .01) {
         treemap <- NULL
       } #else {
       #   for (idx_treemap in 1:length(treemap$t)) {
@@ -188,7 +186,15 @@ merge_treemaps <- function(treemap1, treemap2) {
 }
 
 recursive_treemap <- function(categories, center, region, extent, idx_year, level=1, debug=FALSE) {
-  if (length(categories) == 1){
+  if (extent == 0) {
+    treemap <- list(names=c(), k=c(), s=c(), w=c(), a=c(), t=c())
+    for (idx in 1:length(categories)) {
+      ss <- list(x=center[[1]], y=center[[2]])
+      as <- pi * extent**2
+      sub_treemap <- list(names=c(categories[[idx]]$name), k=c(region), s=c(ss), w=c(0), a=c(as), t=c(1))
+      treemap <- merge_treemaps(treemap, sub_treemap)
+    }
+  } else if (length(categories) == 1){
     ss <- list(x=center[[1]], y=center[[2]])
     as <- pi * extent**2
     treemap <- list(names=c(categories[[1]]$name), k=c(region), s=c(ss), w=c(1), a=c(as), t=c(1))
@@ -223,22 +229,23 @@ recursive_treemap <- function(categories, center, region, extent, idx_year, leve
   treemap
 }
 
-result <- fromJSON('input/test3b-age.json', simplifyVector=FALSE)
+result <- fromJSON('input/test3c-age.json', simplifyVector=FALSE)
+rad <- 800
 
-center <- list(x=500, y=500)
-disc <- discpoly(c(500,500), 3/2*500, npoly=64, class = "gpc.poly")
+center <- list(x=rad, y=rad)
+disc <- discpoly(c(rad,rad), 3/2*rad, npoly=128, class = "gpc.poly")
 categories <- result[[1]]$children
 
 nMonths <- length(result[[1]]$children[[1]]$children[[1]]$children[[1]]$children[[1]]$children[[1]]$chg)
 
-for (idx_year in 2:2) {
+for (idx_year in 1:1) {
   tryCatch({
     filename <- paste("output/age/treemap", idx_year, ".json", sep="")
     print(filename)
     if (file.exists(filename)) {
       next
     }
-    treemap <- recursive_treemap(categories, center, disc, 500, idx_year, level=1, debug=FALSE)
+    treemap <- recursive_treemap(categories, center, disc, rad, idx_year, level=1, debug=FALSE)
     categories_match <- recursive_match(categories, treemap, idx_year)
     json_data <- toJSON(categories_match, pretty=TRUE)
     write(json_data, filename)

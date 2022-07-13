@@ -82,7 +82,7 @@ breaking <- function(a, target, max=TRUE, debug=FALSE, dplot=FALSE) {
     stopping
 }
 
-OLDadjustWeights <- function(w, a, target) {
+adjustWeights <- function(w, a, target) {
     # The choice of 'eps' is important
     # Either too large (e.g., 10) or too small (e.g., .001)
     # can result in failure to converge
@@ -102,7 +102,7 @@ OLDadjustWeights <- function(w, a, target) {
 # adjust by multiple of average absolute weights
 # This avoids problem of getting stuck at a tiny weight
 # (and stabilizes the algorithm generally)
-adjustWeights <- function(w, a, target) {
+OLDadjustWeights <- function(w, a, target) {
     # Watch out for zero-area cells (set to small value)
     a <- ifelse(a == 0, .01*sum(a), a)
     normA <- a/sum(a)
@@ -178,7 +178,7 @@ shiftWeights <- function(s, w) {
                 # to use abs(w) so that ensure non-overlapping
                 # circles even when weights are negative
                 f = sqrt((s$x[i] - s$x[j])^2 +
-                    (s$y[i] - s$y[j])^2)/(abs(w[i]) + abs(w[j]))
+                    (s$y[i] - s$y[j])^2)/(w[i] + w[j])
 
                 if (f > 0 && f < 1) {
                     w[i] <- w[i]*f
