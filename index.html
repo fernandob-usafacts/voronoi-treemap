@@ -17,7 +17,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 <div id="spending"></div>
 <div id="spending-pct"></div>
 
-<script src="https://unpkg.com/flubber@0.3.0"></script>
+<!-- <script src="https://unpkg.com/flubber@0.3.0"></script> -->
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 
@@ -118,7 +118,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
     }
   }
 
-  Promise.all([d3.json("data/data_age_new.json"), d3.json("data/spending.json")]).then(function(treemap){
+  Promise.all([d3.json("data/data_year.json"), d3.json("data/spending.json")]).then(function(treemap){
 
     const cells = treemap[0];
     const spending = treemap[1];
@@ -176,6 +176,8 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
     const t = 100;
 
+    console.log(cells)
+
     d3.select("#year")
       .attr("max", cells[0].size.length - 1)
       .on("input", update);
@@ -186,6 +188,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
       let prev_idx = idx;
       idx = d3.select("#year").property("value");
+      console.log(idx)
 
       function showTooltip(event, d) {
         tooltip.style("left", (event.offsetX + 25) + 'px')
@@ -204,29 +207,35 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       path.enter().append("path")
         .transition().duration(500)
         .attr("id", d => d.name)
-        .attr("d", d => line(d.vertices[idx]))
-        .attrTween("d", function(d){
-          if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
-            return null;
-          }
-          let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
-          return interpolator
+        .attr("d", d => {
+          console.log(d.vertices[idx])
+          return line(d.vertices[idx])
         })
+        // .attrTween("d", function(d){
+        //   if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
+        //     return null;
+        //   }
+        //   let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
+        //   return interpolator
+        // })
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
         .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]))
         // .on("mouseover", showTooltip)
         // .on("mouseout", hideTooltip);
 
-      path.transition().duration(500)
+      path//.transition().duration(500)
         .attr("id", d => d.name)
-        .attrTween("d", function(d, i){
-          if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
-            return null;
-          }
-          let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
-          return interpolator
+        // .attrTween("d", function(d, i){
+        //   if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
+        //     return null;
+        //   }
+        //   let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
+        //   return interpolator
+        // })
+        .attr("d", d => {
+          console.log(d.vertices[idx])
+          return line(d.vertices[idx])
         })
-        // .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
         .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
 
