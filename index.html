@@ -176,8 +176,6 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
     const t = 100;
 
-    console.log(cells)
-
     d3.select("#year")
       .attr("max", cells[0].size.length - 1)
       .on("input", update);
@@ -188,7 +186,6 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
       let prev_idx = idx;
       idx = d3.select("#year").property("value");
-      console.log(idx)
 
       function showTooltip(event, d) {
         tooltip.style("left", (event.offsetX + 25) + 'px')
@@ -207,10 +204,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
       path.enter().append("path")
         .transition().duration(500)
         .attr("id", d => d.name)
-        .attr("d", d => {
-          console.log(d.vertices[idx])
-          return line(d.vertices[idx])
-        })
+        .attr("d", d => line(d.vertices[idx]))
         // .attrTween("d", function(d){
         //   if (d.vertices[prev_idx].length === 0 || d.vertices[idx].length === 0) {
         //     return null;
@@ -232,10 +226,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
         //   let interpolator = flubber.interpolate(line(d.vertices[prev_idx]), line(d.vertices[idx]));
         //   return interpolator
         // })
-        .attr("d", d => {
-          console.log(d.vertices[idx])
-          return line(d.vertices[idx])
-        })
+        .attr("d", d => line(d.vertices[idx]))
         .attr("stroke-width", d => (maxLevel - d.level + 1) + 'px')
         .attr("fill", d =>  d.mchg[idx] === null ? '#f1f1f1' : color(d.mchg[idx]));
 
