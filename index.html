@@ -186,6 +186,7 @@ Year: <input id="year" type="range" min="0" max="2" value="0">
 
       let prev_idx = idx;
       idx = d3.select("#year").property("value");
+      console.log(idx)
 
       function showTooltip(event, d) {
         tooltip.style("left", (event.offsetX + 25) + 'px')
